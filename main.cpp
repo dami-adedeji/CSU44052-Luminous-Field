@@ -16,6 +16,11 @@
 static GLFWwindow *window;
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
 
+// OpenGL camera view parameters
+static glm::vec3 eye_center(0,0,0);
+static glm::vec3 lookat(0, 0, 1);
+static glm::vec3 up(0, 1, 0);
+
 static GLuint LoadTextureTileBox(const char *texture_file_path) {
     int w, h, channels;
     uint8_t* img = stbi_load(texture_file_path, &w, &h, &channels, 3);
@@ -82,6 +87,10 @@ int main(void) {
 	glEnable(GL_CULL_FACE);
 
 	// shaders, objects, set up rest here
+	glm::float32 FoV = 45;
+	glm::float32 zNear = 0.1f;
+	glm::float32 zFar = 1000.0f;
+	glm::mat4 projectionMatrix = glm::perspective(glm::radians(FoV), 4.0f / 3.0f, zNear, zFar);
 
 // render
 	do
@@ -89,7 +98,8 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// calculate viewMatrix and vp
-
+		glm::mat4 viewMatrix = glm::lookAt(eye_center, lookat, up);
+		glm::mat4 vp = projectionMatrix * viewMatrix;
 		glDepthMask(GL_FALSE);
 
 		// Render the skybox
