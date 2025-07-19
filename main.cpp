@@ -12,14 +12,17 @@
 #include <iostream>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <map>
 
 static GLFWwindow *window;
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
 
 // OpenGL camera view parameters
-static glm::vec3 eye_center(50,50,20);
-static glm::vec3 lookat(50, 0, -50);
+static glm::vec3 eye_center;
+static glm::vec3 lookat;
 static glm::vec3 up(0, 1, 0);
+
+constexpr float tileSize = 100.0f;
 
 static GLuint LoadTextureTileBox(const char *texture_file_path) {
     int w, h, channels;
@@ -49,7 +52,7 @@ struct Plane
 {
 	glm::vec3 position, scale;
 	const char* texture_path;
-	GLuint shaderID;
+	//GLuint shaderID;
 
 	GLfloat vertices[12] = {
 		0.0f, 0.0f, 0.0f,		// front left
@@ -77,7 +80,7 @@ struct Plane
 	{
 		this->position = position;
 		this->scale = scale;
-		this->shaderID = shaderID;
+		//this->shaderID = shaderID;
 
 		glGenVertexArrays(1, &VAO);
 		glBindVertexArray(VAO);
@@ -100,7 +103,7 @@ struct Plane
 			std::cerr << "Failed to load plane shaders." << std::endl;
 	}
 
-	void render(glm::mat4 cameraMatrix)
+	void render(glm::mat4 cameraMatrix, GLuint shaderID)
 	{
 		glUseProgram(shaderID);
 		glBindVertexArray(VAO);
@@ -146,7 +149,7 @@ struct Plane
 		glDeleteBuffers(1, &EBO);
 		//glDeleteBuffers(1, &UVBO);
 		glDeleteVertexArrays(1,&VAO);
-		glDeleteProgram(shaderID);
+		//glDeleteProgram(shaderID);
 	}
 };
 
@@ -260,10 +263,10 @@ struct Box {
 	// Shader variable IDs
 	GLuint mvpMatrixID;
 
-	void initialize(glm::vec3 position, glm::vec3 scale, GLuint shaderID) {
+	void initialize( glm::vec3 scale, glm::vec3 position, GLuint shaderID) {
 		// Define scale of the box geometry
-		this->position = position;
 		this->scale = scale;
+		this->position = position + glm::vec3(0.0f, scale.y, 0.0f); // to always have base be at position
 		this->shaderID = shaderID;
 
 		// Create a vertex array object
@@ -335,12 +338,188 @@ struct Box {
 		glDeleteBuffers(1, &colorBufferID);
 		glDeleteBuffers(1, &indexBufferID);
 		glDeleteVertexArrays(1, &vertexArrayID);
-		glDeleteProgram(shaderID);
+	}
+};
+
+struct Tile {
+	glm::vec3 position;
+	GLuint shaderID;
+
+	GLfloat vertices[12] = {
+		// to have position as center rather than front left:
+		-0.5f, 0.0f, 0.5f, // front left
+		0.5f, 0.0f, 0.5f, // front right
+		0.5f, 0.0f, -0.5f, // back right
+		-0.5f, 0.0f, -0.5f // back left
+	};
+
+	GLfloat colours[12] = {
+		1.0f, 0.0f, 1.0f,
+		1.0f, 0.0f, 1.0f,
+		1.0f, 0.0f, 1.0f,
+		1.0f, 0.0f, 1.0f
+	};
+
+	GLuint indices[6] = {
+		0, 1, 2,
+		0, 2, 3
+	};
+
+
+	GLuint VAO, VBO, EBO, CBO, mvpMatrixID;
+	void initialise(glm::vec3 position, GLuint shaderID)
+	{
+		this->position = position;
+		this->shaderID = shaderID;
+
+		glGenVertexArrays(1, &VAO);
+		glBindVertexArray(VAO);
+
+		glGenBuffers(1, &VBO);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+		glGenBuffers(1, &CBO);
+		glBindBuffer(GL_ARRAY_BUFFER, CBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(colours), colours, GL_STATIC_DRAW);
+
+		glGenBuffers(1, &EBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	}
+
+	void render(glm::mat4 cameraMatrix)
+	{
+		glUseProgram(shaderID);
+
+		glBindVertexArray(VAO);
+
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, CBO);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		mvpMatrixID = glGetUniformLocation(shaderID, "MVP");
+
+		glm::mat4 modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, position);  // Apply translation
+		modelMatrix = glm::scale(modelMatrix, glm::vec3(tileSize, 1, tileSize));
+		// Calculate MVP matrix
+		glm::mat4 MVP = cameraMatrix * modelMatrix;
+
+		// Send MVP matrix to the shader
+		glUniformMatrix4fv(mvpMatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+		//glEnableVertexAttribArray(2);
+		//glBindBuffer(GL_ARRAY_BUFFER, UVBO);
+		//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+		// set texture sampler to use texture unit 0
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, textureID);
+		//shader->setUniform1i("textureSampler", 0);
+		//glUniform1i(textureSamplerID, 0);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0);
+
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		//glDisableVertexAttribArray(2);
+	}
+
+	void cleanup()
+	{
+		glDeleteBuffers(1, &VBO);
+		glDeleteBuffers(1, &CBO);
+		glDeleteBuffers(1, &EBO);
+		//glDeleteBuffers(1, &UVBO);
+		glDeleteVertexArrays(1,&VAO);
+	}
+};
+
+struct TileManager
+{
+	std::map<std::pair<int,int>, Tile> tiles;
+	int tileDistance = 3;
+	void initialise()
+	{
+		// add textures here too
+	}
+
+	void updateTiles(glm::vec3 playerPosition, GLuint shaderID)
+	{
+		std::cout << "Box position: " << playerPosition.x << ", " << playerPosition.z << std::endl;
+		std::cout << "Tile size: " << tileSize << std::endl;
+
+		int playerTileX = std::floor(playerPosition.x / tileSize);
+		int playerTileZ = std::floor(playerPosition.z / tileSize);
+
+		std::cout << "Player tile coords: " << playerTileX << ", " << playerTileZ << std::endl;
+
+		std::map<std::pair<int,int>, Tile> tilesToRemove;
+
+		for (int x = playerTileX - tileDistance; x <= playerTileX + tileDistance; ++x)
+		{
+			for (int z = playerTileZ - tileDistance; z <= playerTileZ + tileDistance; ++z)
+			{
+				// for curr tile at x,z
+				std::pair<int, int> tileKey = std::make_pair(x, z);
+				std::cout << "Checking tile: " << x/tileSize << ", " << z/tileSize << std::endl;
+
+				if (tiles.find(tileKey) == tiles.end()) // not found-> make the tile
+				{
+					std::cout << "Spawning tile at " << x/tileSize << ", " << z/tileSize << std::endl;
+
+					Tile tile;
+					tile.initialise(glm::vec3(x * tileSize, 0.0f, z * tileSize), shaderID);
+					tiles[tileKey] = tile;
+
+					std::cout << "Spawned tile at " << x/tileSize << ", " << z/tileSize << std::endl;
+				}
+			}
+		}
+
+		for (auto t = tiles.begin(); t != tiles.end(); )
+		{
+			int x = t->first.first; // x in x,z of tile to delete
+			int z = t->first.second; // z of same
+
+			if (std::abs(x - playerTileX) > tileDistance || std::abs(z - playerTileZ) > tileDistance)
+			{
+				// Clean up the tile if needed (e.g., GPU cleanup)
+				t->second.cleanup();
+				t = tiles.erase(t); // erase returns the next iterator
+			}
+			else ++t;
+		}
+	}
+
+	void renderTiles(glm::mat4 cameraMatrix)
+	{
+			for (auto& [pos, tile] : tiles)
+			{
+				tile.render(cameraMatrix);
+				std::cout << "Rendering tile at " << tile.position.x/tileSize << ", " << tile.position.z/tileSize << std::endl;
+			}
+
+
+	}
+
+	void cleanup()
+	{
+		for (auto& [pos, tile] : tiles)
+			tile.cleanup();
+
+		tiles.clear();
 	}
 };
 
 Box b;
-Plane p;
+//Plane p;
 
 int main(void) {
     // Initialise GLFW
@@ -378,6 +557,7 @@ int main(void) {
 	}
 
 	GLuint objectShader = LoadShadersFromFile("../object.vert", "../object.frag");
+	if (objectShader == 0) std::cerr << "Failed to load object shader." << std::endl;
 
 	// Background
 	glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
@@ -391,11 +571,17 @@ int main(void) {
 	glm::float32 zFar = 1000.0f;
 	glm::mat4 projectionMatrix = glm::perspective(glm::radians(FoV), 4.0f / 3.0f, zNear, zFar);
 
-	p.initialise(glm::vec3(0,0,0), glm::vec3(100,1,100), objectShader);
+	//p.initialise(glm::vec3(0,0,0), glm::vec3(100,1,100), objectShader);
+	TileManager t;
+	t.initialise();
+	b.initialize(glm::vec3(5,5,5), glm::vec3(0,0,0), objectShader);
 
-	b.initialize(glm::vec3(lookat.x, b.scale.y,lookat.z), glm::vec3(5,5,5), objectShader);
-
+	//Tile tile;
+	//tile.initialise(glm::vec3(0,0,0));
 // render
+		eye_center = b.position + glm::vec3(-10, 20, 70);
+		lookat = b.position;
+
 	do
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -403,10 +589,16 @@ int main(void) {
 		// calculate viewMatrix and vp
 		glm::mat4 viewMatrix = glm::lookAt(eye_center, lookat, up);
 		glm::mat4 vp = projectionMatrix * viewMatrix;
+
+		t.updateTiles(b.position, objectShader);
+
 		glDepthMask(GL_TRUE);
 		// render stuff here
-		p.render(vp);
+		//p.render(vp, objectShader);
 		b.render(vp);
+		//tile.render(vp, objectShader);
+		t.renderTiles(vp);
+
 		// Swap buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -415,12 +607,14 @@ int main(void) {
 	while (!glfwWindowShouldClose(window));
 
 	// Clean up
-	p.cleanup();
+	//p.cleanup();
 	b.cleanup();
+	//tile.cleanup();
+	t.cleanup();
+
+	glDeleteProgram(objectShader);
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
-// cleanup
-
     return 0;
 }
 
@@ -448,7 +642,6 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 	{
 		if (b.position.x < (100.0f-b.scale.x))
 			b.position.x += 1.0f;
-		//std::cout << "Position: " << b.position.x  << std::endl;
 	}
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
