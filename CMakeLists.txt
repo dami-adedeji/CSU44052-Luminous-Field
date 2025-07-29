@@ -13,11 +13,17 @@ include_directories(
         external/glad-opengl-3.3/include/
         external/
         render/
+        structs/
 )
 
 add_executable(main
         main.cpp
-        render/shader.cpp)
+        render/shader.cpp
+        structs/box.cpp
+        structs/texture.cpp
+        structs/tile.cpp
+        structs/tileManager.cpp
+)
 
 target_link_libraries(main
         ${OPENGL_LIBRARY}

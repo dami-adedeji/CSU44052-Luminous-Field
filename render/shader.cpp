@@ -193,3 +193,47 @@ GLuint LoadShadersFromString(std::string VertexShaderCode, std::string FragmentS
 
 	return ProgramID;
 }
+
+void Shader::initialise(const char *vertex_file_path, const char *fragment_file_path)
+{
+	ID = LoadShadersFromFile(vertex_file_path, fragment_file_path);
+	if (ID == 0) std::cerr << "Failed to load shader. Vertex file path: " << vertex_file_path << std::endl;
+}
+
+void Shader::setInt(const std::string &name, int value) const
+{
+	glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
+	if (glGetUniformLocation(ID, name.c_str()) < 0)
+		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+}
+
+void Shader::setFloat(const std::string &name, float value) const
+{
+	glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+	if (glGetUniformLocation(ID, name.c_str()) < 0)
+		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+}
+
+
+void Shader::setVec3(const std::string &name, float v0, float v1, float v2) const
+{
+	glUniform3f(glGetUniformLocation(ID, name.c_str()), v0, v1, v2);
+	if (glGetUniformLocation(ID, name.c_str()) < 0)
+		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+}
+
+void Shader::setMatrix(const std::string &name, const float *value) const
+{
+	glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, value);
+	if (glGetUniformLocation(ID, name.c_str()) < 0)
+		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+}
+
+void Shader::use() const
+{
+	glUseProgram(ID);
+}
+
+void Shader::remove() const {
+	glDeleteProgram(ID);
+}
