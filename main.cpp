@@ -6,7 +6,7 @@
 #include <shader.h>
 #include <box.h>
 #include <tileManager.h>
-
+#include <light.h>
 #include <vector>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -21,11 +21,15 @@ static glm::vec3 eye_center(0, 20, 0);
 glm::vec3 camera_target = eye_center;
 static glm::vec3 lookat;
 static glm::vec3 front(0,0,-1);
-glm::vec3 flatFront;
 static glm::vec3 up(0, 1, 0);
 
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
+
+// for lighting
+
+float cutoff = glm::cos(glm::radians(12.5f));
+float outerCutoff = glm::cos(glm::radians(17.5f));
 
 // for rotation
 bool firstMouse = true;
@@ -33,11 +37,6 @@ float yaw   = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 
 float pitch =  0.0f;
 float lastX =  800.0f / 2.0;
 float lastY =  600.0 / 2.0;
-
-// for lighting
-glm::vec3 lightPos(0,80,-100);
-glm::vec3 lightColour(0.9f, 1.0f,0.9f);
-float cutoff = glm::cos(glm::radians(12.5f)); // for spotlight
 
 int main(void) {
     // Initialise GLFW
@@ -65,8 +64,8 @@ int main(void) {
 	// Ensure we can capture the escape key being pressed below
 	//glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-	/*glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetCursorPosCallback(window, mouse_callback);*/
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetCursorPosCallback(window, mouse_callback);
 
 	// Load OpenGL functions, gladLoadGL returns the loaded version, 0 on error.
 	int version = gladLoadGL(glfwGetProcAddress);
@@ -94,35 +93,78 @@ int main(void) {
 	Shader lightSourceShader;
 	lightSourceShader.initialise("../shaders/lightSourceBox.vert", "../shaders/lightSourceBox.frag");
 
-	lightSourceShader.use();
-	lightSourceShader.setVec3("lightColour", lightColour.r, lightColour.g, lightColour.b);
+	/*Shader terrainShader;
+	objectShader.initialise("../shaders/terrain.vert", "../shaders/terrain.frag");
 
 	objectShader.use();
-	objectShader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
-
-	objectShader.use();
-	objectShader.setFloat("cutoff", cutoff);
-
-	objectShader.use();
-	objectShader.setVec3("lightFacing", 0, -1, 0);
-
-	objectShader.use();
+	objectShader.setVec3("spotlightPos", spotlightPos.x, spotlightPos.y, spotlightPos.z);
+	objectShader.setVec3("spotlightColour", spotlightColour.r, spotlightColour.g, spotlightColour.b);
 	objectShader.setFloat("constant", 1.0f);
+	objectShader.setFloat("linear", 0.0014f);
+	objectShader.setFloat( "quadratic", 0.000007f);
+	/*objectShader.setFloat("cutoff", cutoff);
+	objectShader.setVec3("lightFacing", 0, -1, 0);*/
+
+	/*terrainShader.use();
+	terrainShader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
+	terrainShader.setVec3("lightColour", lightColour.r, lightColour.g, lightColour.b);
+	terrainShader.setFloat("constant", 1.0f);
+	terrainShader.setFloat("linear", 0.07f);
+	terrainShader.setFloat( "quadratic", 0.017f);*/
+
+	// making lights
+	Light dirLight;
+	dirLight.type = 0;
+	dirLight.direction = glm::vec3(-0.5, -1.0, -0.3);
+	dirLight.colour = glm::vec3(0.05f, 0.05f,0.1f);
+	dirLight.constant = 1.0;
+	dirLight.linear = 0.007;
+	dirLight.quadratic = 0.0002;
+
+	// for lighting - spotlight
+	Light spotlight;
+	spotlight.type = 1;
+	spotlight.direction = glm::vec3(0, -1, 0);
+	spotlight.position = glm::vec3(0,80,-40);//(0,100,-100);
+	spotlight.colour = glm::vec3(0.3f, 2.5f, 0.2f);
+	spotlight.constant = 1.0;
+	spotlight.linear = 0.005;
+	spotlight.quadratic = 0.00005;
+	spotlight.cutoff = glm::cos(glm::radians(4.0f));
+	spotlight.outerCutoff = glm::cos(glm::radians(8.0f));
+
+	std::vector<Light> lights = {dirLight, spotlight};
 
 	objectShader.use();
-	objectShader.setFloat("linear", 0.07f);
+	objectShader.setInt("numLights", lights.size());
+	for (int i = 0; i < lights.size(); ++i)
+	{
+		std::string base = "lights[" + std::to_string(i) + "]";
+		objectShader.setInt((base + ".type"), lights[i].type);
+		objectShader.setVec3((base + ".position"), lights[i].position.x, lights[i].position.y, lights[i].position.z);
+		objectShader.setVec3((base + ".direction"), lights[i].direction.x, lights[i].direction.y, lights[i].direction.z);
+		objectShader.setVec3((base + ".colour"), lights[i].colour.r, lights[i].colour.g, lights[i].colour.b);
+		objectShader.setFloat((base + ".constant"), lights[i].constant);
+		objectShader.setFloat((base + ".linear"), lights[i].linear);
+		objectShader.setFloat((base + ".quadratic"), lights[i].quadratic);
+		objectShader.setFloat((base + ".cutoff"), lights[i].cutoff);
+		objectShader.setFloat((base + ".outerCutoff"), lights[i].outerCutoff);
+	}
 
-	objectShader.use();
-	objectShader.setFloat( "quadratic", 0.017f);
+	//fog to fade out the horizon; based on cam pos
+	objectShader.setVec3("fogColour", 0.03f, 0.04f, 0.01f);
+	objectShader.setFloat("fogStart", 50.0f);
+	objectShader.setFloat("fogEnd", 150.0f);
 
-	glUseProgram(0);
+	lightSourceShader.use();
+	lightSourceShader.setVec3("spotlightColour", spotlight.colour.r, spotlight.colour.g, spotlight.colour.b);
 
 	TileManager t;
 	t.initialise();
 
-	Box b, b2;
-	b.initialize(glm::vec3(10,10,10),lightPos,lightSourceShader);
-	b2.initialize(glm::vec3(10,10,10), glm::vec3(0,0,-40), objectShader);
+	Box spotlightBox, b2;
+	spotlightBox.initialize(glm::vec3(5,5,5),spotlight.position,lightSourceShader, "");
+	b2.initialize(glm::vec3(10,10,10), glm::vec3(0,0,-40), objectShader, "");
 
 	float prevDeltaTime = 0.016f; // 60 fpsshader.use();
 
@@ -152,13 +194,16 @@ int main(void) {
 		glm::vec3 updatePos = camera_target + forwardLook;
 		//std::cout << "deltaTime: " << deltaTime << std::endl;
 
+		// for fog to follow
+		objectShader.setVec3("cameraPos", eye_center.x, eye_center.y, eye_center.z);
+
 		t.updateTiles(updatePos, objectShader);
 
 		glDepthMask(GL_TRUE);
 		// render stuff here
-		t.renderTiles(vp, objectShader);
-		b.render(vp,lightSourceShader);
-		b2.render(vp, objectShader);
+		t.renderTiles(viewMatrix, projectionMatrix, objectShader);
+		spotlightBox.render(viewMatrix, projectionMatrix, lightSourceShader);
+		b2.render(viewMatrix, projectionMatrix, objectShader);
 
 		// Swap buffers
 		glfwSwapBuffers(window);
@@ -169,7 +214,7 @@ int main(void) {
 
 	// Clean up
 	t.cleanup();
-	b.cleanup();
+	spotlightBox.cleanup();
 	b2.cleanup();
 	objectShader.remove();
 	lightSourceShader.remove();
@@ -183,6 +228,7 @@ void processInput(GLFWwindow *window)
 {
 	float cameraSpeed = 15.0f * deltaTime;
 	glm::vec3 move(0.0f);
+	glm::vec3 flatFront = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_REPEAT)
 	{
@@ -192,7 +238,7 @@ void processInput(GLFWwindow *window)
 
 		flatFront = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
 		eye_center += cameraSpeed * flatFront;*/
-		move += front;
+		move += flatFront;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_REPEAT)
@@ -203,17 +249,17 @@ void processInput(GLFWwindow *window)
 		flatFront = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
 		eye_center -= cameraSpeed * flatFront;*/
 
-		move -= front;
+		move -= flatFront;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_REPEAT)
 	{
 		//eye_center -= glm::normalize(glm::cross(front, up) * cameraSpeed);
-		move -= glm::normalize(glm::cross(front, up));
+		move -= glm::normalize(glm::cross(flatFront, up));
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_REPEAT)
 	{
-		move += glm::normalize(glm::cross(front, up));
+		move += glm::normalize(glm::cross(flatFront, up));
 	}
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
@@ -223,6 +269,7 @@ void processInput(GLFWwindow *window)
 
 	//std::cout << "Movement applied: (" << move.x << ", " << move.z << ")" << std::endl;
 	//std::cout << "New camera position: (" << eye_center.x << ", " << eye_center.z << ")" << std::endl;
+	camera_target.y = 20.0f; // to prevent flying or going into terrain!!!
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)

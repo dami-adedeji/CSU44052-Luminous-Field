@@ -1,58 +1,84 @@
 #version 330 core
 
+#define MAX_LIGHTS 8
+struct Light
+{
+    int type;
+    vec3 position;
+    vec3 direction;
+    vec3 colour;
+    float constant;
+    float linear;
+    float quadratic;
+    float cutoff;
+    float outerCutoff;
+};
+
 in vec2 uv;
 in vec3 normal;
-in vec3 colour;
-in vec3 worldPos;
+in vec3 surfaceColour;
+in vec3 fragPos;
+
 out vec4 finalColour;
 
+uniform int numLights;
+uniform Light lights[MAX_LIGHTS];
+
+uniform bool useTexture;
 uniform sampler2D textureSampler;
-uniform vec3 lightColour;
-uniform sampler2D normalSampler;
-uniform vec3 lightPos;
 
-// for a spotlight
-uniform float cutoff;
-uniform vec3 lightFacing;
-
-// attenuation
-uniform float constant;
-uniform float linear;
-uniform float quadratic;
+uniform vec3 cameraPos;
+uniform float fogStart;
+uniform float fogEnd;
+uniform vec3 fogColour;
 
 void main() {
-    vec3 baseColour = texture(textureSampler,uv).rgb; //for texture
+    vec3 baseColour;
+    if (useTexture) baseColour = texture(textureSampler, uv).rgb;
+    else baseColour = surfaceColour;
 
-    vec3 norm = normalize(normal);
-    vec3 lightDir = normalize(lightPos - worldPos);
+    vec3 result = vec3(0.0);
+    for (int i = 0; i < numLights; ++i) {
+        Light light = lights[i];
+        vec3 lightDir;
+        float attenuation = 1.0;
+        float diff = 0.0;
 
-    float theta = dot(lightDir, normalize(-lightFacing));
+        if (light.type == 0) {
+            // Directional
+            lightDir = normalize(-light.direction);
+            diff = max(dot(normal, lightDir), 0.0);
 
-    float intensity = (theta > cutoff) ? 1.0f : 0.3f;
+        } else if (light.type == 1) {
+            // Point
+            lightDir = normalize(light.position - fragPos);
+            float distance = length(light.position - fragPos);
+            attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+            diff = max(dot(normal, lightDir), 0.0);
 
-    float ambientStrength = 0.3f;
-    vec3 ambient = ambientStrength * lightColour;
+        } else if (light.type == 2) {
+            // Spotlight
+            lightDir = normalize(light.position - fragPos);
+            float theta = dot(lightDir, normalize(-light.direction));
+            float epsilon = light.cutoff - light.outerCutoff;
+            float intensity = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * lightColour;
+            float distance = length(light.position - fragPos);
+            attenuation = intensity / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+            diff = max(dot(normal, lightDir), 0.0);
+        }
 
-    // attenuation
-    float dist = length(lightPos - worldPos);
-    float attenuation = 1.0 / (constant + linear * dist + quadratic * (dist * dist));
+        vec3 lighting = diff * light.colour * baseColour;
+        result += attenuation * lighting;
+    }
+    float ambientStrength = 0.2;
+    vec3 ambient = ambientStrength * baseColour;
+    result += ambient;
 
-    // apply lighting
-    ambient *= attenuation * intensity;
-    diffuse *= attenuation * intensity;
-
-    vec3 result = (ambient + diffuse) * baseColour;
-    finalColour = vec4(result, 1.0);
-
-    /*tone mapping
-    result = result / 1.0 + result;
-
-    // gamma correction
-    float gamma = 2.2;
-    result = pow(result, vec3(1.0/gamma));
-    /*float exposure = 0.5f; // because my scene is too bright and idk how else to reduce that
-    finalColor = finalColor * exposure;*/
+    float distanceToCamera = length(fragPos - cameraPos);
+    float fogFactor = clamp((fogEnd - distanceToCamera) / (fogEnd - fogStart), 0.0, 1.0);
+    // Blend scene color with fog
+    vec3 foggedColour = mix(fogColour, result, fogFactor);
+    finalColour = vec4(foggedColour, 1.0);
 }
+

@@ -68,15 +68,14 @@ void TileManager::updateTiles(glm::vec3 playerPosition, Shader &program)
 				tileActiveStatus[key] = shouldBeActive;
 			}
 		}
-
 	}
 
-void TileManager::renderTiles(glm::mat4 cameraMatrix, Shader &program)
+void TileManager::renderTiles(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &program)
 {
     for (auto& [pos, tile] : tiles)
     {
         if (!tileActiveStatus[pos]) continue; // only active tiles
-        tile.render(cameraMatrix, program);
+        tile.render(viewMatrix, projectionMatrix, program);
         //std::cout << "Rendering tile at " << tile.position.x/tileSize << ", " << tile.position.z/tileSize << std::endl;
     }
 }

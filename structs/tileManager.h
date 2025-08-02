@@ -25,7 +25,7 @@ struct TileManager
 
     void updateTiles(glm::vec3 playerPosition, Shader &program);
 
-    void renderTiles(glm::mat4 cameraMatrix, Shader &program);
+    void renderTiles(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &program);
 
     void cleanup();
 };

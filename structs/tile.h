@@ -12,14 +12,17 @@ struct Tile
 
     static const GLfloat vertices[12];
     static const GLfloat colours[12];
+    static const GLfloat normals[12];
     static const GLfloat uv[8];
     static const GLint indices[6];
 
-    GLuint VAO, VBO, UVBO, EBO, CBO, textureID;
+    bool hasTexture;
+
+    GLuint VAO, VBO, UVBO, EBO, CBO, NBO, textureID;
 
     void initialise(glm::vec3 position, Shader program, const char* texture_path);
 
-    void render(glm::mat4 cameraMatrix, Shader &program);
+    void render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &program);
 
     void cleanup();
 };

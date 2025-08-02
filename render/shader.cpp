@@ -200,33 +200,55 @@ void Shader::initialise(const char *vertex_file_path, const char *fragment_file_
 	if (ID == 0) std::cerr << "Failed to load shader. Vertex file path: " << vertex_file_path << std::endl;
 }
 
+void Shader::setBool(const std::string &name, bool value) const
+{
+	GLint loc = glGetUniformLocation(ID, name.c_str());
+	if (loc < 0) {
+		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+		return;
+	}
+	glUniform1i(loc, static_cast<int>(value));
+}
+
 void Shader::setInt(const std::string &name, int value) const
 {
-	glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
-	if (glGetUniformLocation(ID, name.c_str()) < 0)
+	GLint loc = glGetUniformLocation(ID, name.c_str());
+	if (loc < 0) {
 		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+		return;
+	}
+	glUniform1i(loc, static_cast<int>(value));
 }
 
 void Shader::setFloat(const std::string &name, float value) const
 {
-	glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
-	if (glGetUniformLocation(ID, name.c_str()) < 0)
+	GLint loc = glGetUniformLocation(ID, name.c_str());
+	if (loc < 0) {
 		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+		return;
+	}
+	glUniform1f(loc, value);
 }
 
 
 void Shader::setVec3(const std::string &name, float v0, float v1, float v2) const
 {
-	glUniform3f(glGetUniformLocation(ID, name.c_str()), v0, v1, v2);
-	if (glGetUniformLocation(ID, name.c_str()) < 0)
+	GLint loc = glGetUniformLocation(ID, name.c_str());
+	if (loc < 0) {
 		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+		return;
+	}
+	glUniform3f(loc, v0, v1, v2);
 }
 
 void Shader::setMatrix(const std::string &name, const float *value) const
 {
-	glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, value);
-	if (glGetUniformLocation(ID, name.c_str()) < 0)
+	GLint loc = glGetUniformLocation(ID, name.c_str());
+	if (loc < 0) {
 		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+		return;
+	}
+	glUniformMatrix4fv(loc, 1, GL_FALSE, value);
 }
 
 void Shader::use() const

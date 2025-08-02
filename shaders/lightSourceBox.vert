@@ -2,11 +2,12 @@
 
 layout (location = 0) in vec3 vertexPos;
 
-out vec3 colour;
-uniform mat4 MVP;
-uniform vec3 lightColour;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
 void main() {
-    gl_Position = MVP * vec4(vertexPos, 1.0);
+    gl_Position = projection * view * model * vec4(vertexPos, 1.0);
     //uv = vertexUV;
     //normal = vec3(0.0f, 1.0f, 0.0f);
 }
