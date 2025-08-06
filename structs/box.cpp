@@ -144,7 +144,6 @@ void Box::initialize(glm::vec3 scale, glm::vec3 position, Shader &program, const
     this->scale = scale;
     this->position = position + glm::vec3(0.0f, scale.y, 0.0f);
     //this->rotateAxis = rotateAxis;
-    program.use();
 
     // Create a vertex array object
     glGenVertexArrays(1, &vertexArrayID);
@@ -186,8 +185,6 @@ void Box::initialize(glm::vec3 scale, glm::vec3 position, Shader &program, const
 }
 
 void Box::render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &program) {
-    program.use();
-
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -226,8 +223,6 @@ void Box::render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &progr
 
     // TODO: Set model-view-projection matrix
     program.setMatrix("model", &modelMatrix[0][0]);
-    program.setMatrix("view", &viewMatrix[0][0]);
-    program.setMatrix("projection", &projectionMatrix[0][0]);
     // ------------------------------------
     //glUniformMatrix4fv(mvpMatrixID, 1, GL_FALSE, &mvp[0][0]);
     //program.setMatrix("MVP", &mvp[0][0]);
@@ -243,6 +238,22 @@ void Box::render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &progr
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
 }
+
+void Box::renderDepth(Shader& program)
+{
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+
+    glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), position);
+    modelMatrix = glm::scale(modelMatrix, scale);
+    program.setMatrix("model", &modelMatrix[0][0]);
+
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+}
+
 
 void Box::cleanup() {
     glDeleteBuffers(1, &vertexBufferID);

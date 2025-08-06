@@ -9,7 +9,8 @@
 struct TileManager
 {
     std::map<std::pair<int,int>, Tile> tiles;
-    int tileDistance = 3;
+    int tileDistance = 3; // load 7x7 tile
+    int renderDistance = 2; // draw 5x5 tile
     const char* texture_path;
 
     const float tileSize = Tile::tileSize;
@@ -18,6 +19,9 @@ struct TileManager
 
     int currentTile_X; // x value of the tile camera was on in last frame
     int currentTile_Z; // z value of the tile camera was on in last frame
+
+    int frameCounter = 0;
+    int cleanupInterval = 10; // unload tiles every 10 frames for memory
 
     std::map<std::pair<int,int>, bool> tileActiveStatus;
 

@@ -25,6 +25,8 @@ struct Box
 
     void render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &program);
 
+    void renderDepth(Shader &program);
+
     void cleanup();
 };
 

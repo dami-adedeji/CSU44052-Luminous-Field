@@ -40,7 +40,6 @@ const GLint Tile::indices[6] = {
 
 void Tile::initialise(glm::vec3 position, Shader program, const char* texture_path)
 {
-    program.use();
     this->position = position;
     hasTexture = true;
 
@@ -90,8 +89,6 @@ void Tile::initialise(glm::vec3 position, Shader program, const char* texture_pa
 
 void Tile::render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &program)
 {
-    program.use();
-
     glBindVertexArray(VAO);
 
     glEnableVertexAttribArray(0);
@@ -129,8 +126,6 @@ void Tile::render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &prog
     //glUniformMatrix4fv(mvpMatrixID, 1, GL_FALSE, &MVP[0][0]);
     //program.setMatrix("MVP", &mvp[0][0]);
     program.setMatrix("model", &modelMatrix[0][0]);
-    program.setMatrix("view", &viewMatrix[0][0]);
-    program.setMatrix("projection", &projectionMatrix[0][0]);
 
     glEnableVertexAttribArray(3);
     glBindBuffer(GL_ARRAY_BUFFER, UVBO);
@@ -148,6 +143,21 @@ void Tile::render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &prog
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(3);
+}
+
+void Tile::renderDepth(Shader& program)
+{
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+    glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), position);
+    modelMatrix = glm::scale(modelMatrix, glm::vec3(tileSize, 1, tileSize));
+    program.setMatrix("model", &modelMatrix[0][0]);
+
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 void Tile::cleanup()

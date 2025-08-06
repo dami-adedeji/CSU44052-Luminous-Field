@@ -8,7 +8,7 @@
 struct Tile
 {
     glm::vec3 position;
-    static constexpr float tileSize = 250.0f;
+    static constexpr float tileSize = 64.0f;
 
     static const GLfloat vertices[12];
     static const GLfloat colours[12];
@@ -23,6 +23,8 @@ struct Tile
     void initialise(glm::vec3 position, Shader program, const char* texture_path);
 
     void render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &program);
+
+    void renderDepth(Shader &program);
 
     void cleanup();
 };

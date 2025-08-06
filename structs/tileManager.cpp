@@ -46,28 +46,32 @@ void TileManager::updateTiles(glm::vec3 playerPosition, Shader &program)
 				}
 			}
 
-			/*for (auto t = tiles.begin(); t != tiles.end(); )
+			if (frameCounter % cleanupInterval == 0)
 			{
-				int x = t->first.first; // x in x,z of tile to delete
-				int z = t->first.second; // z of same
-
-				if (std::abs(x - playerTileX) > tileDistance || std::abs(z - playerTileZ) > tileDistance)
+				for (auto t = tiles.begin(); t != tiles.end(); )
 				{
-					// Clean up the tile if needed (e.g., GPU cleanup)
-					t->second.cleanup();
-					t = tiles.erase(t); // erase returns the next iterator
+					int x = t->first.first; // x in x,z of tile to delete
+					int z = t->first.second; // z of same
+
+					if (std::abs(x - playerTileX) > tileDistance || std::abs(z - playerTileZ) > tileDistance)
+					{
+						// Clean up the tile if needed (e.g., GPU cleanup)
+						t->second.cleanup();
+						t = tiles.erase(t); // erase returns the next iterator
+					}
+					else ++t;
 				}
-				else ++t;
-			}*/
+			}
 
 			for (auto& [key, tile] : tiles) {
 				int x = key.first;
 				int z = key.second;
 
-				bool shouldBeActive = std::abs(x - playerTileX) <= tileDistance && std::abs(z - playerTileZ) <= tileDistance;
+				bool shouldBeActive = std::abs(x - playerTileX) <= renderDistance && std::abs(z - playerTileZ) <= renderDistance;
 				tileActiveStatus[key] = shouldBeActive;
 			}
 		}
+	frameCounter++;
 	}
 
 void TileManager::renderTiles(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &program)
