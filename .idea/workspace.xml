@@ -31,16 +31,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="aacd5f13-e937-427d-bc11-fa2fa5b9992b" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/structs/gltfModel.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/structs/gltfModel.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shaders/depth.frag" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shaders/depth.vert" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/main.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/render/shader.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/render/shader.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/render/shader.h" beforeDir="false" afterPath="$PROJECT_DIR$/render/shader.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/tile.h" beforeDir="false" afterPath="$PROJECT_DIR$/structs/tile.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/tileManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/structs/tileManager.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/tileManager.h" beforeDir="false" afterPath="$PROJECT_DIR$/structs/tileManager.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shaders/object.frag" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/object.frag" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shaders/object.vert" beforeDir="false" afterPath="$PROJECT_DIR$/shaders/object.vert" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/gltfModel.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/structs/gltfModel.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/gltfModel.h" beforeDir="false" afterPath="$PROJECT_DIR$/structs/gltfModel.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,6 +53,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="shader-template" />
+        <option value="vs-template" />
       </list>
     </option>
   </component>
@@ -161,7 +160,7 @@
       <workItem from="1754474696382" duration="64000" />
       <workItem from="1754474861987" duration="24051000" />
       <workItem from="1754512272339" duration="1722000" />
-      <workItem from="1754565680300" duration="9483000" />
+      <workItem from="1754565680300" duration="24792000" />
     </task>
     <servers />
   </component>

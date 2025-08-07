@@ -13,9 +13,11 @@ struct GLTFModel
 public:
     GLTFModel(const std::string& path);
 
-    void render(Shader& shader);
+    void render(Shader& shader, GLuint shadowMap);
 
     void setTransform(const glm::mat4& transform);
+
+    void renderDepth(glm::mat4& lightSpaceMatrix, Shader& shader);
 
 private:
     void loadModel(const std::string& path);

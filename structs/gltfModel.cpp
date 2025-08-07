@@ -163,7 +163,7 @@ void GLTFModel::loadModel(const std::string& path)
 }
 
 
-void GLTFModel::render(Shader& program)
+void GLTFModel::render(Shader& program, GLuint shadowMap )
 {
     program.setMatrix("model", &modelMatrix[0][0]);
 
@@ -177,6 +177,10 @@ void GLTFModel::render(Shader& program)
         }
         else program.setVec4("modelColour", prim.baseColorFactor);
 
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, shadowMap);
+        program.setInt("shadowMap", 1);
+
         glBindVertexArray(prim.vao);
         glDrawElements(GL_TRIANGLES, prim.indexCount, GL_UNSIGNED_INT, 0);
     }
@@ -184,6 +188,19 @@ void GLTFModel::render(Shader& program)
     glBindVertexArray(0);
 }
 
+void GLTFModel::renderDepth(glm::mat4& lightSpaceMatrix, Shader& program)
+{
+    program.setMatrix("model",&modelMatrix[0][0]);
+    program.setMatrix("lightSpaceMatrix", &lightSpaceMatrix[0][0]);
+
+    for (const auto& prim : primitives)
+    {
+        // textures unimportant for depth
+        glBindVertexArray(prim.vao);
+        glDrawElements(GL_TRIANGLES, prim.indexCount, GL_UNSIGNED_INT, 0);
+    }
+    glBindVertexArray(0);
+}
 void GLTFModel::setTransform(const glm::mat4& transform) {
     modelMatrix = transform;
 }

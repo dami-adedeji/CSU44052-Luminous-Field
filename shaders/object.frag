@@ -16,8 +16,9 @@ struct Light
 
 in vec2 uv;
 in vec3 normal;
-in vec3 surfaceColour;
+//in vec3 surfaceColour;
 in vec3 fragPos;
+in vec4 fragPosLightSpace;
 
 out vec4 finalColour;
 
@@ -26,16 +27,37 @@ uniform Light lights[MAX_LIGHTS];
 
 uniform bool useTexture;
 uniform sampler2D textureSampler;
+uniform sampler2D shadowMap;
 
 uniform vec3 cameraPos;
 uniform float fogStart;
 uniform float fogEnd;
 uniform vec3 fogColour;
 
+float calculateShadow()
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w; // perspective divide
+
+    projCoords = projCoords * 0.5 + 0.5; // ndc
+
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
+    projCoords.y < 0.0 || projCoords.y > 1.0 ||
+    projCoords.z > 1.0)
+    return 1.0;
+
+    float closestDepth = texture(shadowMap, projCoords.xy).r;
+
+    float currentDepth = projCoords.z;
+
+    float shadow = (currentDepth >= (closestDepth + 1e-3)) ? 0.2 : 1.0;
+
+    return shadow;
+}
+
 void main() {
     vec3 baseColour;
     if (useTexture) baseColour = texture(textureSampler, uv).rgb;
-    else baseColour = surfaceColour;
+    //else baseColour = surfaceColour;
 
     vec3 result = vec3(0.0);
     for (int i = 0; i < numLights; ++i) {
@@ -43,12 +65,12 @@ void main() {
         vec3 lightDir;
         float attenuation = 1.0;
         float diff = 0.0;
-
+        float shadow = 1.0;
         if (light.type == 0) {
             // Directional
             lightDir = normalize(-light.direction);
             diff = max(dot(normal, lightDir), 0.0);
-
+            shadow = calculateShadow();
         } else if (light.type == 1) {
             // Point
             lightDir = normalize(light.position - fragPos);
@@ -68,7 +90,7 @@ void main() {
             diff = max(dot(normal, lightDir), 0.0);
         }
 
-        vec3 lighting = diff * light.colour * baseColour;
+        vec3 lighting = diff * light.colour * baseColour * shadow;
         result += attenuation * lighting;
     }
     float ambientStrength = 0.2;

@@ -33,10 +33,39 @@ static glm::vec3 up(0, 1, 0);
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
-// for lighting
+// for shadow
+static int shadowMapWidth = 1024;
+static int shadowMapHeight = 768;
 
-float cutoff = glm::cos(glm::radians(12.5f));
-float outerCutoff = glm::cos(glm::radians(17.5f));
+static float depthFoV = 80.0f;
+static float depthNear = 30.0f;
+static float depthFar = 600.0f;
+
+// Helper flag and function to save depth maps for debugging
+static bool saveDepth = true;
+
+// This function retrieves and stores the depth map of the default frame buffer
+// or a particular frame buffer (indicated by FBO ID) to a PNG image.
+static void saveDepthTexture(GLuint fbo, std::string filename) {
+	int width = shadowMapWidth;
+	int height = shadowMapHeight;
+	if (shadowMapWidth == 0 || shadowMapHeight == 0) {
+		width = 1024;
+		height = 768;
+	}
+	int channels = 3;
+
+	std::vector<float> depth(width * height);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glReadBuffer(GL_DEPTH_COMPONENT);
+	glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, depth.data());
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	std::vector<unsigned char> img(width * height * 3);
+	for (int i = 0; i < width * height; ++i) img[3*i] = img[3*i+1] = img[3*i+2] = depth[i] * 255;
+
+	stbi_write_png(filename.c_str(), width, height, channels, img.data(), width * channels);
+}
 
 // for rotation
 bool firstMouse = true;
@@ -100,6 +129,9 @@ int main(void) {
 	Shader lightSourceShader;
 	lightSourceShader.initialise("../shaders/lightSourceBox.vert", "../shaders/lightSourceBox.frag");
 
+	Shader depthShader;
+	depthShader.initialise("../shaders/depth.vert","../shaders/depth.frag");
+
 	// making lights
 	Light dirLight;
 	dirLight.type = 0;
@@ -121,7 +153,7 @@ int main(void) {
 	spotlight.cutoff = glm::cos(glm::radians(4.0f));
 	spotlight.outerCutoff = glm::cos(glm::radians(8.0f));
 
-	std::vector<Light> lights = {dirLight, spotlight};
+	std::vector<Light> lights = {dirLight/*, spotlight*/};
 
 	objectShader.use();
 	objectShader.setInt("numLights", lights.size());
@@ -166,7 +198,7 @@ int main(void) {
 
 	GLTFModel cabin("../assets/rustic-cabin/scene.gltf");
 	transformMatrix = glm::mat4(1.0f);
-	transformMatrix = glm::translate(transformMatrix, glm::vec3(0,9,-40));
+	transformMatrix = glm::translate(transformMatrix, glm::vec3(0,8,-40));
 	transformMatrix = glm::scale(transformMatrix, glm::vec3(10.0f));
 	//transformMatrix = glm::rotate(transformMatrix, glm::radians(90.0f),glm::vec3(1,0,0));
 	cabin.setTransform(transformMatrix);
@@ -179,6 +211,42 @@ int main(void) {
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(-90.0f),glm::vec3(1,0,0));
 	tree.setTransform(transformMatrix);
 	models.push_back(tree);
+
+	GLTFModel tree2("../assets/pine_tree_-_ps1_low_poly/scene1.gltf");
+	transformMatrix = glm::mat4(1.0f);
+	transformMatrix = glm::translate(transformMatrix, glm::vec3(-40,0, -60));
+	transformMatrix = glm::scale(transformMatrix, glm::vec3(3.0f));
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(-90.0f),glm::vec3(1,0,0));
+	tree2.setTransform(transformMatrix);
+	models.push_back(tree2);
+
+	//shadow fbo
+	GLuint shadowFBO;
+	glGenFramebuffers(1, &shadowFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+
+	// shadow map
+	GLuint depthMap;
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = {1.0, 1.0, 1.0, 1.0};
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		std::cerr << "Error: Framebuffer is not complete!" << std::endl;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	float prevDeltaTime = 0.016f; // 60 fpsshader.use();
 
@@ -194,6 +262,22 @@ int main(void) {
 		deltaTime = glm::mix(prevDeltaTime, deltaTime, 0.1f);
 		prevDeltaTime = deltaTime;
 
+		//========= SHADOW RENDER ===============================
+		glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+
+		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);//perspective(glm::radians(depthFoV), (float)(shadowMapWidth/shadowMapHeight), depthNear, depthFar);
+		glm::mat4 lightView = glm::lookAt(b2.position - dirLight.direction * 100.0f, b2.position, glm::vec3(0.0, 1.0, 0.0));
+		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+		depthShader.use();
+		depthShader.setMatrix("lightSpaceMatrix", &lightSpaceMatrix[0][0]);
+
+		for (GLTFModel& m : models)
+			m.renderDepth(lightSpaceMatrix, depthShader);
+
+		//========= MAIN RENDER =============
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		processInput(window);
 
@@ -207,24 +291,26 @@ int main(void) {
 		glm::vec3 updatePos = camera_target + forwardLook;
 		//std::cout << "deltaTime: " << deltaTime << std::endl;
 
-		// for fog to follow
-		t.updateTiles(updatePos, objectShader);
-
 		glDepthMask(GL_TRUE);
 		// render stuff here
 		objectShader.use();
 		objectShader.setVec3("cameraPos", eye_center);
 		objectShader.setMatrix("view", &viewMatrix[0][0]);
 		objectShader.setMatrix("projection", &projectionMatrix[0][0]);
+		objectShader.setMatrix("lightSpaceMatrix", &lightSpaceMatrix[0][0]);
+		// for fog to follow
+		t.updateTiles(updatePos, objectShader);
 		t.renderTiles(viewMatrix, projectionMatrix, objectShader);
 		//b2.render(viewMatrix, projectionMatrix, objectShader);
 		for (GLTFModel& m : models)
-			m.render(objectShader);
+			m.render(objectShader, depthMap);
 
-		lightSourceShader.use();
-		lightSourceShader.setMatrix("view", &viewMatrix[0][0]);
-		lightSourceShader.setMatrix("projection", &projectionMatrix[0][0]);
-		spotlightBox.render(viewMatrix, projectionMatrix, lightSourceShader);
+		if (saveDepth) {
+			std::string filename = "depth_camera.png";
+			saveDepthTexture(shadowFBO, filename);
+			std::cout << "Depth texture saved to " << filename << std::endl;
+			saveDepth = false;
+		}
 
 		// Swap buffers
 		glfwSwapBuffers(window);
@@ -239,6 +325,7 @@ int main(void) {
 	b2.cleanup();
 	objectShader.remove();
 	lightSourceShader.remove();
+	depthShader.remove();
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
     return 0;
