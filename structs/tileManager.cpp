@@ -4,8 +4,7 @@
 
 void TileManager::initialise()
 {
-	texture_path = "../textures/coast_sand_rocks_02/coast_sand_rocks_02_diff_1k.jpg";
-	//normal_path = "../textures/coast_sand_rocks_02/coast_sand_rocks_02_nor_gl_1k.jpg";
+	texture_path = "../textures/coast_sand_rocks_02/coast_sand_rocks_02_diff_1k.jpg"; //"../assets/grass 12 - 128x128.png";
 }
 
 void TileManager::updateTiles(glm::vec3 playerPosition, Shader &program)

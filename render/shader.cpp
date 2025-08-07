@@ -231,14 +231,24 @@ void Shader::setFloat(const std::string &name, float value) const
 }
 
 
-void Shader::setVec3(const std::string &name, float v0, float v1, float v2) const
+void Shader::setVec3(const std::string &name, glm::vec3 value) const
 {
 	GLint loc = glGetUniformLocation(ID, name.c_str());
 	if (loc < 0) {
 		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
 		return;
 	}
-	glUniform3f(loc, v0, v1, v2);
+	glUniform3fv(loc, 1, &value[0]);
+}
+
+void Shader::setVec4(const std::string &name, glm::vec4 value) const
+{
+	GLint loc = glGetUniformLocation(ID, name.c_str());
+	if (loc < 0) {
+		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+		return;
+	}
+	glUniform4fv(loc, 1, &value[0]);
 }
 
 void Shader::setMatrix(const std::string &name, const float *value) const

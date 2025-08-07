@@ -7,17 +7,24 @@
 #include <box.h>
 #include <tileManager.h>
 #include <light.h>
+#include <gltfModel.h>
 #include <vector>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <iostream>
+
+
+// GLTF model loader
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <tiny_gltf.h>
 
 static GLFWwindow *window;
 void processInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 // OpenGL camera view parameters
-static glm::vec3 eye_center(0, 20, 0);
+static glm::vec3 eye_center(0, 10 , 0);
 glm::vec3 camera_target = eye_center;
 static glm::vec3 lookat;
 static glm::vec3 front(0,0,-1);
@@ -93,25 +100,6 @@ int main(void) {
 	Shader lightSourceShader;
 	lightSourceShader.initialise("../shaders/lightSourceBox.vert", "../shaders/lightSourceBox.frag");
 
-	/*Shader terrainShader;
-	objectShader.initialise("../shaders/terrain.vert", "../shaders/terrain.frag");
-
-	objectShader.use();
-	objectShader.setVec3("spotlightPos", spotlightPos.x, spotlightPos.y, spotlightPos.z);
-	objectShader.setVec3("spotlightColour", spotlightColour.r, spotlightColour.g, spotlightColour.b);
-	objectShader.setFloat("constant", 1.0f);
-	objectShader.setFloat("linear", 0.0014f);
-	objectShader.setFloat( "quadratic", 0.000007f);
-	/*objectShader.setFloat("cutoff", cutoff);
-	objectShader.setVec3("lightFacing", 0, -1, 0);*/
-
-	/*terrainShader.use();
-	terrainShader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
-	terrainShader.setVec3("lightColour", lightColour.r, lightColour.g, lightColour.b);
-	terrainShader.setFloat("constant", 1.0f);
-	terrainShader.setFloat("linear", 0.07f);
-	terrainShader.setFloat( "quadratic", 0.017f);*/
-
 	// making lights
 	Light dirLight;
 	dirLight.type = 0;
@@ -125,11 +113,11 @@ int main(void) {
 	Light spotlight;
 	spotlight.type = 1;
 	spotlight.direction = glm::vec3(0, -1, 0);
-	spotlight.position = glm::vec3(0,80,-40);//(0,100,-100);
-	spotlight.colour = glm::vec3(0.3f, 2.5f, 0.2f);
+	spotlight.position = glm::vec3(0,70,-40);//(0,100,-100);
+	spotlight.colour = glm::vec3(0.75f, 6.25f, 0.5f);//(0.3f, 2.5f, 0.2f);
 	spotlight.constant = 1.0;
-	spotlight.linear = 0.005;
-	spotlight.quadratic = 0.00005;
+	spotlight.linear = 0.014;
+	spotlight.quadratic = 0.0007;
 	spotlight.cutoff = glm::cos(glm::radians(4.0f));
 	spotlight.outerCutoff = glm::cos(glm::radians(8.0f));
 
@@ -141,9 +129,9 @@ int main(void) {
 	{
 		std::string base = "lights[" + std::to_string(i) + "]";
 		objectShader.setInt((base + ".type"), lights[i].type);
-		objectShader.setVec3((base + ".position"), lights[i].position.x, lights[i].position.y, lights[i].position.z);
-		objectShader.setVec3((base + ".direction"), lights[i].direction.x, lights[i].direction.y, lights[i].direction.z);
-		objectShader.setVec3((base + ".colour"), lights[i].colour.r, lights[i].colour.g, lights[i].colour.b);
+		objectShader.setVec3((base + ".position"), lights[i].position);
+		objectShader.setVec3((base + ".direction"), lights[i].direction);
+		objectShader.setVec3((base + ".colour"), lights[i].colour);
 		objectShader.setFloat((base + ".constant"), lights[i].constant);
 		objectShader.setFloat((base + ".linear"), lights[i].linear);
 		objectShader.setFloat((base + ".quadratic"), lights[i].quadratic);
@@ -152,12 +140,13 @@ int main(void) {
 	}
 
 	//fog to fade out the horizon; based on cam pos
-	objectShader.setVec3("fogColour", 0.03f, 0.04f, 0.01f);
+	glm::vec3 fogColour = glm::vec3(0.03f, 0.04f, 0.01f);
+	objectShader.setVec3("fogColour", fogColour);
 	objectShader.setFloat("fogStart", 50.0f);
 	objectShader.setFloat("fogEnd", 150.0f);
 
 	lightSourceShader.use();
-	lightSourceShader.setVec3("spotlightColour", spotlight.colour.r, spotlight.colour.g, spotlight.colour.b);
+	lightSourceShader.setVec3("spotlightColour", spotlight.colour);
 
 	TileManager t;
 	t.initialise();
@@ -165,6 +154,31 @@ int main(void) {
 	Box spotlightBox, b2;
 	spotlightBox.initialize(glm::vec3(5,5,5),spotlight.position,lightSourceShader, "");
 	b2.initialize(glm::vec3(10,10,10), glm::vec3(0,0,-40), objectShader, "");
+
+	std::vector<GLTFModel> models;
+	glm::mat4 transformMatrix(1.0f);
+	GLTFModel ufo("../assets/ufo-low-poly/scene.gltf");
+	transformMatrix = glm::translate(transformMatrix, spotlight.position);
+	transformMatrix = glm::scale(transformMatrix, glm::vec3(40.0f));                    // scale down 10x
+	//transformMatrix = glm::rotate(transformMatrix, glm::radians(-90.0f),glm::vec3(1,0,0));
+	ufo.setTransform(transformMatrix);
+	models.push_back(ufo);
+
+	GLTFModel cabin("../assets/rustic-cabin/scene.gltf");
+	transformMatrix = glm::mat4(1.0f);
+	transformMatrix = glm::translate(transformMatrix, glm::vec3(0,9,-40));
+	transformMatrix = glm::scale(transformMatrix, glm::vec3(10.0f));
+	//transformMatrix = glm::rotate(transformMatrix, glm::radians(90.0f),glm::vec3(1,0,0));
+	cabin.setTransform(transformMatrix);
+	models.push_back(cabin);
+
+	GLTFModel tree("../assets/pine_tree_-_ps1_low_poly/scene1.gltf");
+	transformMatrix = glm::mat4(1.0f);
+	transformMatrix = glm::translate(transformMatrix, glm::vec3(20,0, -40));
+	transformMatrix = glm::scale(transformMatrix, glm::vec3(2.0f));
+	transformMatrix = glm::rotate(transformMatrix, glm::radians(-90.0f),glm::vec3(1,0,0));
+	tree.setTransform(transformMatrix);
+	models.push_back(tree);
 
 	float prevDeltaTime = 0.016f; // 60 fpsshader.use();
 
@@ -188,22 +202,29 @@ int main(void) {
 
 		// calculate viewMatrix and vp
 		glm::mat4 viewMatrix = glm::lookAt(eye_center, eye_center + front, up);
-		glm::mat4 vp = projectionMatrix * viewMatrix;
 
 		glm::vec3 forwardLook = glm::normalize(front) * t.tileSize * 0.5f; // to ensure tiles in distancee are created when we get there
 		glm::vec3 updatePos = camera_target + forwardLook;
 		//std::cout << "deltaTime: " << deltaTime << std::endl;
 
 		// for fog to follow
-		objectShader.setVec3("cameraPos", eye_center.x, eye_center.y, eye_center.z);
-
 		t.updateTiles(updatePos, objectShader);
 
 		glDepthMask(GL_TRUE);
 		// render stuff here
+		objectShader.use();
+		objectShader.setVec3("cameraPos", eye_center);
+		objectShader.setMatrix("view", &viewMatrix[0][0]);
+		objectShader.setMatrix("projection", &projectionMatrix[0][0]);
 		t.renderTiles(viewMatrix, projectionMatrix, objectShader);
+		//b2.render(viewMatrix, projectionMatrix, objectShader);
+		for (GLTFModel& m : models)
+			m.render(objectShader);
+
+		lightSourceShader.use();
+		lightSourceShader.setMatrix("view", &viewMatrix[0][0]);
+		lightSourceShader.setMatrix("projection", &projectionMatrix[0][0]);
 		spotlightBox.render(viewMatrix, projectionMatrix, lightSourceShader);
-		b2.render(viewMatrix, projectionMatrix, objectShader);
 
 		// Swap buffers
 		glfwSwapBuffers(window);
@@ -261,6 +282,17 @@ void processInput(GLFWwindow *window)
 	{
 		move += glm::normalize(glm::cross(flatFront, up));
 	}
+	if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_Q) == GLFW_REPEAT)
+		&& eye_center.y < 19.0f/*+ cameraSpeed <= 20.0f*/)
+	{
+		move += glm::vec3(0.0f, 1.0f, 0.0f);
+	}
+	if ((glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_E) == GLFW_REPEAT)
+		&& eye_center.y > 1.0f/*- cameraSpeed >= 0.0f*/)
+	{
+		move -= glm::vec3(0.0f, 1.0f, 0.0f);
+	}
+
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
@@ -268,8 +300,8 @@ void processInput(GLFWwindow *window)
 		camera_target += glm::normalize(move) * cameraSpeed;
 
 	//std::cout << "Movement applied: (" << move.x << ", " << move.z << ")" << std::endl;
-	//std::cout << "New camera position: (" << eye_center.x << ", " << eye_center.z << ")" << std::endl;
-	camera_target.y = 20.0f; // to prevent flying or going into terrain!!!
+	//std::cout << "New camera position: (" << eye_center.x << ", " << eye_center.y << eye_center.z << ", " << ")" << std::endl;
+	//camera_target.y = 10.0f; // to prevent flying or going into terrain!!!
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
@@ -288,8 +320,6 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
     lastX = xpos;
     lastY = ypos;
-	std::cout << "X-pos: " << xpos << std::endl;
-	std::cout << "Y-pos: " << ypos << std::endl;
 
     float sensitivity = 0.1f; // change this value to your liking
     xoffset *= sensitivity;

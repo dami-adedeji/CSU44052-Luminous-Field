@@ -9,8 +9,8 @@
 struct TileManager
 {
     std::map<std::pair<int,int>, Tile> tiles;
-    int tileDistance = 3; // load 7x7 tile
-    int renderDistance = 2; // draw 5x5 tile
+    int tileDistance = 4; // load 8x8 tile
+    int renderDistance = 3; // draw 6x6 tile
     const char* texture_path;
 
     const float tileSize = Tile::tileSize;

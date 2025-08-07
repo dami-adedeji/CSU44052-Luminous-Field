@@ -8,7 +8,7 @@
 struct Tile
 {
     glm::vec3 position;
-    static constexpr float tileSize = 64.0f;
+    static constexpr float tileSize = 32.0f;
 
     static const GLfloat vertices[12];
     static const GLfloat colours[12];

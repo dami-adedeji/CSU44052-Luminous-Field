@@ -1,0 +1,11 @@
+Model Information:
+* title:	Rustic_Cabin_fbx
+* source:	https://sketchfab.com/3d-models/rustic-cabin-fbx-00660493c25d48a1a1fab8ea15140cfc
+* author:	Creater (https://sketchfab.com/7f5609904fe14de59b74533836ad9b)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Rustic_Cabin_fbx" (https://sketchfab.com/3d-models/rustic-cabin-fbx-00660493c25d48a1a1fab8ea15140cfc) by Creater (https://sketchfab.com/7f5609904fe14de59b74533836ad9b) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
