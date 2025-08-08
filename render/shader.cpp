@@ -261,6 +261,17 @@ void Shader::setMatrix(const std::string &name, const float *value) const
 	glUniformMatrix4fv(loc, 1, GL_FALSE, value);
 }
 
+void Shader::setMatrixArray(const std::string& name, const std::vector<glm::mat4>& matrices) const
+{
+	GLint loc = glGetUniformLocation(ID, name.c_str());
+	if (loc < 0) {
+		std::cerr << "Uniform " << name << " not found in shader!" << std::endl;
+		return;
+	}
+	glUniformMatrix4fv(loc, (GLsizei)matrices.size(), GL_FALSE, &matrices[0][0][0]);
+}
+
+
 void Shader::use() const
 {
 	glUseProgram(ID);

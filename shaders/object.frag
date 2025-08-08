@@ -28,10 +28,10 @@ uniform Light lights[MAX_LIGHTS];
 uniform bool useTexture;
 uniform sampler2D textureSampler;
 uniform sampler2D shadowMap;
-
 uniform vec3 cameraPos;
 uniform float fogStart;
 uniform float fogEnd;
+uniform float diffuseStrength;
 uniform vec3 fogColour;
 
 float calculateShadow()
@@ -55,7 +55,7 @@ float calculateShadow()
 }
 
 void main() {
-    vec3 baseColour;
+    vec3 baseColour = vec3(1.0);
     if (useTexture) baseColour = texture(textureSampler, uv).rgb;
     //else baseColour = surfaceColour;
 
@@ -90,7 +90,7 @@ void main() {
             diff = max(dot(normal, lightDir), 0.0);
         }
 
-        vec3 lighting = diff * light.colour * baseColour * shadow;
+        vec3 lighting = diffuseStrength * diff * light.colour * baseColour * shadow;
         result += attenuation * lighting;
     }
     float ambientStrength = 0.2;

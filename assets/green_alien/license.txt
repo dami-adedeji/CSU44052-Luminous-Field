@@ -1,0 +1,11 @@
+Model Information:
+* title:	Green Alien
+* source:	https://sketchfab.com/3d-models/green-alien-9096e628a04242708126cf7b7c8008a1
+* author:	Bogdan Streletskiy (https://sketchfab.com/streletskiy)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Green Alien" (https://sketchfab.com/3d-models/green-alien-9096e628a04242708126cf7b7c8008a1) by Bogdan Streletskiy (https://sketchfab.com/streletskiy) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

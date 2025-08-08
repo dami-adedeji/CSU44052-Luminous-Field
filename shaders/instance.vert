@@ -6,6 +6,7 @@ layout (location = 1) in vec3 vertexNorm;
 layout (location = 3) in vec2 vertexUV;
 layout (location = 4) in ivec4 jointIndices;
 layout (location = 5) in vec4 jointWeights;
+layout (location = 6) in mat4 instanceMatrix;
 
 uniform mat4 bones[100];
 
@@ -15,7 +16,7 @@ out vec2 uv;
 out vec3 fragPos;
 out vec4 fragPosLightSpace;
 
-uniform mat4 model;
+uniform mat4 instanceMatrix;
 uniform mat4 view;
 uniform mat4 projection;
 uniform mat4 lightSpaceMatrix;
@@ -36,12 +37,12 @@ void main() {
         skinnedPos = vec4(vertexPos, 1.0);
     }
 
-    vec4 worldPos = model * skinnedPos;
+    vec4 worldPos = instanceMatrix * skinnedPos;
     gl_Position = projection * view * worldPos;
 
     // surfaceColour = vertexCol;
     uv = vertexUV;
-    normal = mat3(transpose(inverse(model))) * skinnedNorm;
+    normal = mat3(transpose(inverse(instanceMatrix))) * skinnedNorm;
     fragPos = vec3(worldPos);
     fragPosLightSpace = lightSpaceMatrix * worldPos;
 }

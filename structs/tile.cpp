@@ -89,6 +89,7 @@ void Tile::initialise(glm::vec3 position, Shader program, const char* texture_pa
 
 void Tile::render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &program)
 {
+    program.setBool("useSkinning", false);
     glBindVertexArray(VAO);
 
     glEnableVertexAttribArray(0);
@@ -131,6 +132,12 @@ void Tile::render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &prog
     glBindBuffer(GL_ARRAY_BUFFER, UVBO);
     glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
+    glEnableVertexAttribArray(4);
+    glVertexAttrib4f(4, 0.0f, 0.0f, 0.0f, 0.0f); // set joint indices at 0
+
+    glEnableVertexAttribArray(5);
+    glVertexAttrib4f(5, 0.0f, 0.0f, 0.0f, 0.0f); // set joint weights at -
+
     /* set normal sampler to use texture unit 1
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, normalID);
@@ -143,6 +150,8 @@ void Tile::render(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, Shader &prog
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(3);
+    glDisableVertexAttribArray(4);
+    glDisableVertexAttribArray(5);
 }
 
 void Tile::renderDepth(Shader& program)

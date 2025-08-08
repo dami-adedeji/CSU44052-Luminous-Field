@@ -1,3 +1,12 @@
+//This work is based on "Green Alien" (https://sketchfab.com/3d-models/green-alien-9096e628a04242708126cf7b7c8008a1)
+//      by Bogdan Streletskiy (https://sketchfab.com/streletskiy) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+//This work is based on "Pine Tree - PS1 Low Poly" (https://sketchfab.com/3d-models/pine-tree-ps1-low-poly-d71ceeb303644e649d09fe8038aa5e47)
+//      by Wersaus33 (https://sketchfab.com/wersaus33) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+//This work is based on "Rustic_Cabin_fbx" (https://sketchfab.com/3d-models/rustic-cabin-fbx-00660493c25d48a1a1fab8ea15140cfc)
+//      by Creater (https://sketchfab.com/7f5609904fe14de59b74533836ad9b) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+//This work is based on "UFO Low Poly" (https://sketchfab.com/3d-models/ufo-low-poly-0fcfc381e84347fe834da4086883c9af)
+//      by Jacobs Development (https://sketchfab.com/Jacobs_Development) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -12,6 +21,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <iostream>
+#include <random>
 
 
 // GLTF model loader
@@ -74,6 +84,13 @@ float pitch =  0.0f;
 float lastX =  800.0f / 2.0;
 float lastY =  600.0 / 2.0;
 
+float randomFloat(float min, float max) {
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::uniform_real_distribution<> dist(min, max);
+	return dist(gen);
+}
+
 int main(void) {
     // Initialise GLFW
 	if (!glfwInit())
@@ -126,9 +143,6 @@ int main(void) {
 	Shader objectShader;
 	objectShader.initialise("../shaders/object.vert", "../shaders/object.frag");
 
-	Shader lightSourceShader;
-	lightSourceShader.initialise("../shaders/lightSourceBox.vert", "../shaders/lightSourceBox.frag");
-
 	Shader depthShader;
 	depthShader.initialise("../shaders/depth.vert","../shaders/depth.frag");
 
@@ -143,17 +157,17 @@ int main(void) {
 
 	// for lighting - spotlight
 	Light spotlight;
-	spotlight.type = 1;
+	spotlight.type = 2;
 	spotlight.direction = glm::vec3(0, -1, 0);
-	spotlight.position = glm::vec3(0,70,-40);//(0,100,-100);
-	spotlight.colour = glm::vec3(0.75f, 6.25f, 0.5f);//(0.3f, 2.5f, 0.2f);
+	spotlight.position = glm::vec3(0,60,-40);//(0,100,-100);
+	spotlight.colour = glm::vec3(0.75f, 6.25f, 0.5f)*glm::vec3(3.0f);//(0.3f, 2.5f, 0.2f);
 	spotlight.constant = 1.0;
 	spotlight.linear = 0.014;
 	spotlight.quadratic = 0.0007;
-	spotlight.cutoff = glm::cos(glm::radians(4.0f));
-	spotlight.outerCutoff = glm::cos(glm::radians(8.0f));
+	spotlight.cutoff = glm::cos(glm::radians(15.0f));
+	spotlight.outerCutoff = glm::cos(glm::radians(20.0f));
 
-	std::vector<Light> lights = {dirLight/*, spotlight*/};
+	std::vector<Light> lights = {dirLight, spotlight};
 
 	objectShader.use();
 	objectShader.setInt("numLights", lights.size());
@@ -177,27 +191,24 @@ int main(void) {
 	objectShader.setFloat("fogStart", 50.0f);
 	objectShader.setFloat("fogEnd", 150.0f);
 
-	lightSourceShader.use();
-	lightSourceShader.setVec3("spotlightColour", spotlight.colour);
-
 	TileManager t;
 	t.initialise();
 
-	Box spotlightBox, b2;
-	spotlightBox.initialize(glm::vec3(5,5,5),spotlight.position,lightSourceShader, "");
-	b2.initialize(glm::vec3(10,10,10), glm::vec3(0,0,-40), objectShader, "");
-
 	std::vector<GLTFModel> models;
 	glm::mat4 transformMatrix(1.0f);
+	transformMatrix = glm::mat4(1.0f);
 	GLTFModel ufo("../assets/ufo-low-poly/scene.gltf");
+	ufo.isAnimated = false;
 	transformMatrix = glm::translate(transformMatrix, spotlight.position);
-	transformMatrix = glm::scale(transformMatrix, glm::vec3(40.0f));                    // scale down 10x
+	transformMatrix = glm::scale(transformMatrix, glm::vec3(40.0f));
 	//transformMatrix = glm::rotate(transformMatrix, glm::radians(-90.0f),glm::vec3(1,0,0));
 	ufo.setTransform(transformMatrix);
 	models.push_back(ufo);
+	//}
 
 	GLTFModel cabin("../assets/rustic-cabin/scene.gltf");
 	transformMatrix = glm::mat4(1.0f);
+	cabin.isAnimated = false;
 	transformMatrix = glm::translate(transformMatrix, glm::vec3(0,8,-40));
 	transformMatrix = glm::scale(transformMatrix, glm::vec3(10.0f));
 	//transformMatrix = glm::rotate(transformMatrix, glm::radians(90.0f),glm::vec3(1,0,0));
@@ -206,6 +217,7 @@ int main(void) {
 
 	GLTFModel tree("../assets/pine_tree_-_ps1_low_poly/scene1.gltf");
 	transformMatrix = glm::mat4(1.0f);
+	tree.isAnimated = false;
 	transformMatrix = glm::translate(transformMatrix, glm::vec3(20,0, -40));
 	transformMatrix = glm::scale(transformMatrix, glm::vec3(2.0f));
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(-90.0f),glm::vec3(1,0,0));
@@ -214,11 +226,22 @@ int main(void) {
 
 	GLTFModel tree2("../assets/pine_tree_-_ps1_low_poly/scene1.gltf");
 	transformMatrix = glm::mat4(1.0f);
+	tree2.isAnimated = false;
 	transformMatrix = glm::translate(transformMatrix, glm::vec3(-40,0, -60));
 	transformMatrix = glm::scale(transformMatrix, glm::vec3(3.0f));
 	transformMatrix = glm::rotate(transformMatrix, glm::radians(-90.0f),glm::vec3(1,0,0));
 	tree2.setTransform(transformMatrix);
 	models.push_back(tree2);
+
+	float diffStrength = 0.1f;
+	GLTFModel alien("../assets/green_alien/scene.gltf");
+	alien.diffuseStrength = diffStrength;
+	alien.isAnimated = true;
+	transformMatrix = glm::mat4(1.0f);
+	transformMatrix = glm::translate(transformMatrix, glm::vec3(0,0, -30));
+	transformMatrix = glm::scale(transformMatrix, glm::vec3(0.0035f));
+	alien.setTransform(transformMatrix);
+	models.push_back(alien);
 
 	//shadow fbo
 	GLuint shadowFBO;
@@ -237,7 +260,6 @@ int main(void) {
 	float borderColor[] = {1.0, 1.0, 1.0, 1.0};
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
 	glDrawBuffer(GL_NONE);
@@ -249,6 +271,9 @@ int main(void) {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	float prevDeltaTime = 0.016f; // 60 fpsshader.use();
+	float fps = 0.0f;
+	float fpsTimer = 0.0f;
+	int fpsFrames = 0;
 
 	do
 	{
@@ -267,7 +292,7 @@ int main(void) {
 		glClear(GL_DEPTH_BUFFER_BIT);
 
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);//perspective(glm::radians(depthFoV), (float)(shadowMapWidth/shadowMapHeight), depthNear, depthFar);
-		glm::mat4 lightView = glm::lookAt(b2.position - dirLight.direction * 100.0f, b2.position, glm::vec3(0.0, 1.0, 0.0));
+		glm::mat4 lightView = glm::lookAt(glm::vec3(0,8,-40) - dirLight.direction * 100.0f, glm::vec3(0,8,-40), glm::vec3(0.0, 1.0, 0.0));
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
 		depthShader.use();
@@ -280,7 +305,6 @@ int main(void) {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		processInput(window);
-
 		float lerpSpeed = 5.0f;
 		eye_center = glm::mix(eye_center, camera_target, lerpSpeed * deltaTime);
 
@@ -289,27 +313,38 @@ int main(void) {
 
 		glm::vec3 forwardLook = glm::normalize(front) * t.tileSize * 0.5f; // to ensure tiles in distancee are created when we get there
 		glm::vec3 updatePos = camera_target + forwardLook;
-		//std::cout << "deltaTime: " << deltaTime << std::endl;
 
-		glDepthMask(GL_TRUE);
 		// render stuff here
 		objectShader.use();
 		objectShader.setVec3("cameraPos", eye_center);
 		objectShader.setMatrix("view", &viewMatrix[0][0]);
 		objectShader.setMatrix("projection", &projectionMatrix[0][0]);
 		objectShader.setMatrix("lightSpaceMatrix", &lightSpaceMatrix[0][0]);
-		// for fog to follow
-		t.updateTiles(updatePos, objectShader);
-		t.renderTiles(viewMatrix, projectionMatrix, objectShader);
-		//b2.render(viewMatrix, projectionMatrix, objectShader);
+		alien.updateAnimation(deltaTime);
+
 		for (GLTFModel& m : models)
 			m.render(objectShader, depthMap);
+		t.updateTiles(updatePos, objectShader);
+		t.renderTiles(viewMatrix, projectionMatrix, objectShader);
 
 		if (saveDepth) {
 			std::string filename = "depth_camera.png";
 			saveDepthTexture(shadowFBO, filename);
 			std::cout << "Depth texture saved to " << filename << std::endl;
 			saveDepth = false;
+		}
+
+		fpsFrames++;
+		fpsTimer += deltaTime;
+
+		if (fpsTimer >= 1.0f) {
+			fps = fpsFrames / fpsTimer;
+			std::stringstream stream;
+			stream << std::fixed << std::setprecision(2) << "CSU44052 Supplemental DA | Frames per second (FPS): " << fps;
+			glfwSetWindowTitle(window, stream.str().c_str());
+
+			fpsFrames = 0;
+			fpsTimer = 0.0f;
 		}
 
 		// Swap buffers
@@ -321,10 +356,7 @@ int main(void) {
 
 	// Clean up
 	t.cleanup();
-	spotlightBox.cleanup();
-	b2.cleanup();
 	objectShader.remove();
-	lightSourceShader.remove();
 	depthShader.remove();
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
@@ -340,29 +372,16 @@ void processInput(GLFWwindow *window)
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_REPEAT)
 	{
-		//eye_center += cameraSpeed * front;
-
-		/*below to avoid floating errors that is causing slow movement
-
-		flatFront = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
-		eye_center += cameraSpeed * flatFront;*/
 		move += flatFront;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_REPEAT)
 	{
-		//eye_center -= cameraSpeed * front;
-		/*below to avoid floating errors that is causing slow movement
-
-		flatFront = glm::normalize(glm::vec3(front.x, 0.0f, front.z));
-		eye_center -= cameraSpeed * flatFront;*/
-
 		move -= flatFront;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_REPEAT)
 	{
-		//eye_center -= glm::normalize(glm::cross(front, up) * cameraSpeed);
 		move -= glm::normalize(glm::cross(flatFront, up));
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_REPEAT)
@@ -370,12 +389,12 @@ void processInput(GLFWwindow *window)
 		move += glm::normalize(glm::cross(flatFront, up));
 	}
 	if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_Q) == GLFW_REPEAT)
-		&& eye_center.y < 19.0f/*+ cameraSpeed <= 20.0f*/)
+		&& eye_center.y < 40.0f/*+ cameraSpeed <= 20.0f*/)
 	{
 		move += glm::vec3(0.0f, 1.0f, 0.0f);
 	}
 	if ((glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_E) == GLFW_REPEAT)
-		&& eye_center.y > 1.0f/*- cameraSpeed >= 0.0f*/)
+		&& eye_center.y > 5.0f/*- cameraSpeed >= 0.0f*/)
 	{
 		move -= glm::vec3(0.0f, 1.0f, 0.0f);
 	}
@@ -385,10 +404,6 @@ void processInput(GLFWwindow *window)
 
 	if (glm::length(move) > 0.0f)
 		camera_target += glm::normalize(move) * cameraSpeed;
-
-	//std::cout << "Movement applied: (" << move.x << ", " << move.z << ")" << std::endl;
-	//std::cout << "New camera position: (" << eye_center.x << ", " << eye_center.y << eye_center.z << ", " << ")" << std::endl;
-	//camera_target.y = 10.0f; // to prevent flying or going into terrain!!!
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
@@ -408,7 +423,7 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     lastX = xpos;
     lastY = ypos;
 
-    float sensitivity = 0.1f; // change this value to your liking
+    float sensitivity = 0.1f;
     xoffset *= sensitivity;
     yoffset *= sensitivity;
 

@@ -4,6 +4,7 @@
 #include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <string>
+#include <vector>
 
 struct Shader {
     GLuint ID;
@@ -16,6 +17,7 @@ struct Shader {
     void setVec3(const std::string &name, glm::vec3 value) const;
     void setVec4(const std::string &name, glm::vec4 value) const;
     void setMatrix(const std::string &name, const float *value) const;
+    void setMatrixArray(const std::string& name, const std::vector<glm::mat4>& matrices) const;
     void remove() const;
 };
 GLuint LoadShadersFromFile(const char *vertex_file_path, const char *fragment_file_path);
